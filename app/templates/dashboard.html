@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}HR dashboard{% endblock %}
+{% block content %}
+<h1>Team wellbeing dashboard</h1>
+<p class="muted">
+  Responses: {{ total_responses }} · Baseline risk: {{ baseline_mean or "n/a" }}
+  (SD {{ baseline_sd or "n/a" }}) · Min cell: {{ min_cell }}
+</p>
+<p class="muted">
+  Scores are 0–100. Higher <em>risk_score</em> = worse. Red rows exceed baseline + 1 SD
+  (with enough responses). <strong>No individual data is shown.</strong>
+</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Team</th><th>n</th><th>Demand</th><th>Resource</th>
+      <th>Strain</th><th>Risk</th><th>Δ baseline</th><th>Flag</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for t in teams %}
+      {% if t.suppressed %}
+        <tr><td>{{ t.team }}</td><td>{{ t.n }}</td><td colspan="6" class="muted">insufficient data (n &lt; {{ min_cell }})</td></tr>
+      {% else %}
+        <tr class="{% if t.flag %}flag{% endif %}">
+          <td>{{ t.team }}</td>
+          <td>{{ t.n }}</td>
+          <td>{{ t.demand_index }}</td>
+          <td>{{ t.resource_index }}</td>
+          <td>{{ t.strain_index }}</td>
+          <td>{{ t.risk_score }}</td>
+          <td>{{ t.delta }}</td>
+          <td>{% if t.flag %}review workload / support{% else %}—{% endif %}</td>
+        </tr>
+      {% endif %}
+    {% endfor %}
+  </tbody>
+</table>
+
+<p class="muted" style="margin-top:1.5rem;">
+  Export: <a href="/api/export?token={{ request.query_params.get('token','') }}">aggregated CSV</a>
+  (safe to import into Google Sheets).
+</p>
+{% endblock %}

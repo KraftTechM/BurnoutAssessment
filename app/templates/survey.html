@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Pulse survey{% endblock %}
+{% block content %}
+<h1>Wellbeing pulse</h1>
+<p class="muted">Team: <strong>{{ team }}</strong> · Role: <strong>{{ role or "not stated" }}</strong></p>
+
+<form method="post" action="/api/survey">
+  <input type="hidden" name="team" value="{{ team }}">
+  <input type="hidden" name="role" value="{{ role }}">
+  <input type="hidden" name="consent" value="on">
+
+  {% set ns = namespace(section="") %}
+  {% for q in questions %}
+    {% if q.section != ns.section %}
+      {% if ns.section != "" %}</fieldset>{% endif %}
+      <fieldset><legend>{{ q.section }}</legend>
+      {% set ns.section = q.section %}
+    {% endif %}
+    <div class="q">
+      <label for="{{ q.id }}">{{ q.text }}</label>
+      <select id="{{ q.id }}" name="{{ q.id }}" required>
+        <option value="">— choose —</option>
+        {% for opt in options[q.options] %}<option>{{ opt }}</option>{% endfor %}
+      </select>
+    </div>
+  {% endfor %}
+  </fieldset>
+
+  <button type="submit">Submit</button>
+</form>
+{% endblock %}

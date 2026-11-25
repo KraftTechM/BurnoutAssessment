@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Workplace Wellbeing Pulse</h1>
+
+<div class="notice">
+  <strong>How this works.</strong> Your answers are stored separately from your identity
+  (no name, email, or employee ID is collected). Results are only shown to HR
+  <em>aggregated by team</em>, and only when a team has at least {{ teams|length if false else 5 }} responses.
+  We do <strong>not</strong> send individual alerts about you.
+</div>
+
+{% if request.query_params.get('err') %}
+  <p style="color:#b91c1c;">Please check the consent box and choose a team.</p>
+{% endif %}
+
+<form method="get" action="/survey">
+  <fieldset>
+    <legend>Consent</legend>
+    <label><input type="checkbox" name="consent" required> I understand this is an anonymous wellbeing pulse, not a diagnosis.</label>
+  </fieldset>
+
+  <fieldset>
+    <legend>Team</legend>
+    <select name="team" required>
+      <option value="">— select —</option>
+      {% for t in teams %}<option value="{{ t }}">{{ t }}</option>{% endfor %}
+    </select>
+  </fieldset>
+
+  <fieldset>
+    <legend>Role (optional)</legend>
+    <select name="role">
+      <option value="">prefer not to say</option>
+      <option>engineer</option>
+      <option>coordinator</option>
+      <option>cra</option>
+      <option>manager</option>
+      <option>medical-monitor</option>
+      <option>other</option>
+    </select>
+  </fieldset>
+
+  <button type="submit">Continue</button>
+</form>
+{% endblock %}
