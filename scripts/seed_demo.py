@@ -7,7 +7,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from app import db
-from app.scoring import QUESTIONS, OPTIONS, score_response
+from app.scoring import QUESTIONS, score_response
 
 db.init_db()
 
@@ -15,18 +15,20 @@ TEAMS = ["engineering", "research", "operations", "clinical-ops"]
 ROLES = ["engineer", "coordinator", "cra", "manager", "medical-monitor"]
 random.seed(42)
 
-def pick(options_key, bias):
-    opts = OPTIONS[options_key]
-    idx = min(max(int(random.gauss(bias, 1)), 0), len(opts) - 1)
-    return opts[idx]
+def pick_index(bias):
+    # Returns an integer 0-4 based on normal distribution around 'bias'
+    return min(max(int(random.gauss(bias, 1)), 0), 4)
 
 with db.connect() as c:
     for _ in range(60):
         team = random.choice(TEAMS)
-        # Give one team a worse profile on purpose
+        # Give one team a worse profile on purpose (higher index = worse answers)
         bias = 2.5 if team == "clinical-ops" else 1.2
-        answers = {q.id: pick(q.options, bias) for q in QUESTIONS}
+
+        # Store answers as integers
+        answers = {q.id: pick_index(bias) for q in QUESTIONS}
         result = score_response(answers)
+
         cur = c.execute(
             "INSERT INTO responses (team, role, consent, submitted_at, answers) VALUES (?, ?, 1, ?, ?)",
             (team, random.choice(ROLES), datetime.now(timezone.utc).isoformat(), json.dumps(answers)),

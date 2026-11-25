@@ -1,13 +1,10 @@
 """COPSOQ-based scoring engine.
 
 All scales are scored 0-100, following COPSOQ II conventions:
-- 5-point options map to 100, 75, 50, 25, 0
+- 5-point options map to 100, 75, 50, 25, 0 (based on integer indices 0, 1, 2, 3, 4)
 - reverse-scored items are flipped (100 - raw)
 - a scale score is the average of its items
 - direction: 'harm' = high is bad, 'resource' = high is good
-
-The composite risk_score is a TRANSPARENT HEURISTIC, not a clinical
-diagnosis. It is intended for team-level trend monitoring only.
 """
 from dataclasses import dataclass
 from typing import Optional
@@ -91,23 +88,21 @@ RESOURCE_SCALES = ["influence", "development", "predictability", "role_clarity",
 STRAIN_SCALES   = ["behavioural_stress", "somatic_stress", "cognitive_stress"]
 
 
-def _raw_score(options_key: str, answer: Optional[str]) -> Optional[float]:
-    if answer is None or answer == "":
+def _raw_score(options_key: str, answer: Optional[int]) -> Optional[float]:
+    if answer is None:
         return None
-    opts = OPTIONS[options_key]
-    try:
-        idx = opts.index(answer)
-    except ValueError:
+
+    # Fixed: removed the accidental len() wrapper here
+    opts_len = {"freq5": 5, "extent5": 5, "agree5": 5}[options_key]
+
+    if not isinstance(answer, int) or answer < 0 or answer >= opts_len:
         return None
-    n = len(opts) - 1
-    return 100.0 * (1.0 - idx / n)
+    n = opts_len - 1
+    return 100.0 * (1.0 - answer / n)
 
 
-def score_response(answers: dict[str, Optional[str]]) -> dict:
-    """Return per-scale scores and composite indices for one response.
-
-    Missing answers are skipped. A scale with all items missing returns None.
-    """
+def score_response(answers: dict[str, Optional[int]]) -> dict:
+    """Return per-scale scores and composite indices for one response."""
     item_scores: dict[str, Optional[float]] = {}
     for q in QUESTIONS:
         raw = _raw_score(q.options, answers.get(q.id))

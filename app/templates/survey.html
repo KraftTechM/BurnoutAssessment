@@ -1,12 +1,13 @@
 {% extends "base.html" %}
-{% block title %}Pulse survey{% endblock %}
+{% block title %}{{ t('title') }}{% endblock %}
 {% block content %}
-<h1>Wellbeing pulse</h1>
-<p class="muted">Team: <strong>{{ team }}</strong> · Role: <strong>{{ role or "not stated" }}</strong></p>
+<h1>{{ t('title') }}</h1>
+<p class="muted"><strong>{{ t('team') }}:</strong> {{ team }} · <strong>{{ t('role') }}:</strong> {{ role or t('prefer_not') }}</p>
 
 <form method="post" action="/api/survey">
   <input type="hidden" name="team" value="{{ team }}">
   <input type="hidden" name="role" value="{{ role }}">
+  <input type="hidden" name="lang" value="{{ lang }}">
   <input type="hidden" name="consent" value="on">
 
   {% set ns = namespace(section="") %}
@@ -17,15 +18,18 @@
       {% set ns.section = q.section %}
     {% endif %}
     <div class="q">
-      <label for="{{ q.id }}">{{ q.text }}</label>
+      <label for="{{ q.id }}">{{ t(q.id) }}</label>
       <select id="{{ q.id }}" name="{{ q.id }}" required>
-        <option value="">— choose —</option>
-        {% for opt in options[q.options] %}<option>{{ opt }}</option>{% endfor %}
+        <option value="">{{ t('select') }}</option>
+        {% for opt in options[q.options] %}
+          <!-- Save the loop index (0,1,2,3,4) instead of text! -->
+          <option value="{{ loop.index0 }}">{{ opt }}</option>
+        {% endfor %}
       </select>
     </div>
   {% endfor %}
   </fieldset>
 
-  <button type="submit">Submit</button>
+  <button type="submit">{{ t('submit') }}</button>
 </form>
 {% endblock %}

@@ -1,6 +1,7 @@
 import os
-os.environ["BURNOUT_DB"] = ":memory:"  # not used; we use a temp file below
 import tempfile, pathlib
+
+# Set up a temporary DB for tests
 os.environ["BURNOUT_DB"] = str(pathlib.Path(tempfile.gettempdir()) / "burnout_test.db")
 os.environ["ADMIN_TOKEN"] = "test-token"
 os.environ["TEAMS"] = "eng,ops"
@@ -9,7 +10,7 @@ os.environ["MIN_CELL"] = "1"
 # Import after env is set
 from fastapi.testclient import TestClient
 from app.main import app
-from app.scoring import QUESTIONS, OPTIONS
+from app.scoring import QUESTIONS
 
 client = TestClient(app)
 
@@ -17,7 +18,7 @@ client = TestClient(app)
 def _form(team="eng", role="engineer"):
     data = {"team": team, "role": role, "consent": "on"}
     for q in QUESTIONS:
-        data[q.id] = OPTIONS[q.options][0]
+        data[q.id] = "0"  # Submit as string '0' since forms send strings
     return data
 
 

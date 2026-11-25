@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>Thank you</h1>
-<p>Your answers were recorded anonymously. Results will only be reviewed at the team level.</p>
-<p><a href="/">Back to start</a></p>
+<h1>{{ t('thanks') }}</h1>
+<p>{{ t('thanks_msg') }}</p>
+<p><a href="/?lang={{ lang }}">{{ t('back') }}</a></p>
 {% endblock %}

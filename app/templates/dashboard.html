@@ -1,37 +1,41 @@
 {% extends "base.html" %}
-{% block title %}HR dashboard{% endblock %}
+{% block title %}{{ t('dashboard') }}{% endblock %}
 {% block content %}
-<h1>Team wellbeing dashboard</h1>
+<h1>{{ t('dashboard') }}</h1>
 <p class="muted">
-  Responses: {{ total_responses }} · Baseline risk: {{ baseline_mean or "n/a" }}
-  (SD {{ baseline_sd or "n/a" }}) · Min cell: {{ min_cell }}
-</p>
-<p class="muted">
-  Scores are 0–100. Higher <em>risk_score</em> = worse. Red rows exceed baseline + 1 SD
-  (with enough responses). <strong>No individual data is shown.</strong>
+  {{ t('responses') }}: {{ total_responses }} · Baseline: {{ baseline_mean or "n/a" }} (SD {{ baseline_sd or "n/a" }}) · Min cell: {{ min_cell }}
 </p>
 
+<div class="charts">
+    <div class="chart-container">
+        <canvas id="totalRiskChart"></canvas>
+    </div>
+    <div class="chart-container">
+        <canvas id="moduleChart"></canvas>
+    </div>
+</div>
+
+<h3 style="margin-top: 2rem;">Detailed Data</h3>
 <table>
   <thead>
     <tr>
-      <th>Team</th><th>n</th><th>Demand</th><th>Resource</th>
-      <th>Strain</th><th>Risk</th><th>Δ baseline</th><th>Flag</th>
+      <th>{{ t('team_name') }}</th><th>n</th><th>{{ t('demand') }}</th><th>{{ t('resource') }}</th>
+      <th>{{ t('strain') }}</th><th>{{ t('total_risk') }}</th><th>{{ t('flag') }}</th>
     </tr>
   </thead>
   <tbody>
-    {% for t in teams %}
-      {% if t.suppressed %}
-        <tr><td>{{ t.team }}</td><td>{{ t.n }}</td><td colspan="6" class="muted">insufficient data (n &lt; {{ min_cell }})</td></tr>
+    {% for tm in teams %}
+      {% if tm.suppressed %}
+        <tr><td>{{ tm.team }}</td><td>{{ tm.n }}</td><td colspan="5" class="muted">insufficient data (n &lt; {{ min_cell }})</td></tr>
       {% else %}
-        <tr class="{% if t.flag %}flag{% endif %}">
-          <td>{{ t.team }}</td>
-          <td>{{ t.n }}</td>
-          <td>{{ t.demand_index }}</td>
-          <td>{{ t.resource_index }}</td>
-          <td>{{ t.strain_index }}</td>
-          <td>{{ t.risk_score }}</td>
-          <td>{{ t.delta }}</td>
-          <td>{% if t.flag %}review workload / support{% else %}—{% endif %}</td>
+        <tr class="{% if tm.flag %}flag{% endif %}">
+          <td>{{ tm.team }}</td>
+          <td>{{ tm.n }}</td>
+          <td>{{ tm.demand_index }}</td>
+          <td>{{ tm.resource_index }}</td>
+          <td>{{ tm.strain_index }}</td>
+          <td><strong>{{ tm.risk_score }}</strong> ({{ t(tm.risk_level) }})</td>
+          <td>{% if tm.flag %}⚠️ {{ t('flag') }}{% else %}—{% endif %}</td>
         </tr>
       {% endif %}
     {% endfor %}
@@ -39,7 +43,72 @@
 </table>
 
 <p class="muted" style="margin-top:1.5rem;">
-  Export: <a href="/api/export?token={{ request.query_params.get('token','') }}">aggregated CSV</a>
-  (safe to import into Google Sheets).
+  Export: <a href="/api/export?token={{ token }}">aggregated CSV</a>
 </p>
+
+<script>
+  const rawData = {{ chart_data_json | safe }};
+
+  if (typeof Chart === 'undefined') {
+      document.querySelector('.charts').innerHTML = '<p style="color:red; grid-column: 1/-1;">Chart.js failed to load. Please check your internet connection.</p>';
+  } else if (rawData.length > 0) {
+      const teams = rawData.map(d => d.team);
+
+      // 1. Total Risk Chart (Bar)
+      const riskScores = rawData.map(d => d.risk);
+      const riskColors = riskScores.map(s => {
+          if (s < 25) return '#10b981'; // Green
+          if (s < 50) return '#f59e0b'; // Yellow
+          if (s < 75) return '#f97316'; // Orange
+          return '#ef4444';             // Red
+      });
+
+      new Chart(document.getElementById('totalRiskChart'), {
+          type: 'bar',
+          data: {
+              labels: teams,
+              datasets: [{
+                  label: '{{ t("total_risk") }} (0-100)',
+                  data: riskScores,
+                  backgroundColor: riskColors,
+                  borderRadius: 4,
+                  maxBarThickness: 60 // Prevents bars from becoming huge blocks
+              }]
+          },
+          options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              resizeDelay: 150,    // Stops the infinite resizing loop in Grid
+              scales: { y: { beginAtZero: true, max: 100 } },
+              plugins: { legend: { display: false } }
+          }
+      });
+
+      // 2. Modules Chart (Grouped Bar)
+      const demandData = rawData.map(d => d.demand);
+      const resourceData = rawData.map(d => 100 - d.resource); // Invert resource so higher = worse risk
+      const strainData = rawData.map(d => d.strain);
+
+      new Chart(document.getElementById('moduleChart'), {
+          type: 'bar',
+          data: {
+              labels: teams,
+              datasets: [
+                  { label: '{{ t("demand") }} (Risk)', data: demandData, backgroundColor: '#3b82f6', maxBarThickness: 40 },
+                  { label: '{{ t("resource") }} (Lack of)', data: resourceData, backgroundColor: '#8b5cf6', maxBarThickness: 40 },
+                  { label: '{{ t("strain") }} (Risk)', data: strainData, backgroundColor: '#ef4444', maxBarThickness: 40 }
+              ]
+          },
+          options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              resizeDelay: 150,    // Stops the infinite resizing loop in Grid
+              scales: {
+                  y: { beginAtZero: true, max: 100 },
+                  x: { stacked: false }
+              }
+          }
+      });
+  }
+</script>
 {% endblock %}

@@ -1,36 +1,30 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>Workplace Wellbeing Pulse</h1>
+<h1>{{ t('title') }}</h1>
 
 <div class="notice">
-  <strong>How this works.</strong> Your answers are stored separately from your identity
-  (no name, email, or employee ID is collected). Results are only shown to HR
-  <em>aggregated by team</em>, and only when a team has at least {{ teams|length if false else 5 }} responses.
-  We do <strong>not</strong> send individual alerts about you.
+  <strong>{{ t('title') }}.</strong> {{ t('consent_text') }}
 </div>
 
-{% if request.query_params.get('err') %}
-  <p style="color:#b91c1c;">Please check the consent box and choose a team.</p>
-{% endif %}
-
 <form method="get" action="/survey">
+  <input type="hidden" name="lang" value="{{ lang }}">
   <fieldset>
-    <legend>Consent</legend>
-    <label><input type="checkbox" name="consent" required> I understand this is an anonymous wellbeing pulse, not a diagnosis.</label>
+    <legend>{{ t('consent_title') }}</legend>
+    <label><input type="checkbox" name="consent" required> {{ t('consent_text') }}</label>
   </fieldset>
 
   <fieldset>
-    <legend>Team</legend>
+    <legend>{{ t('team') }}</legend>
     <select name="team" required>
-      <option value="">— select —</option>
-      {% for t in teams %}<option value="{{ t }}">{{ t }}</option>{% endfor %}
+      <option value="">{{ t('select') }}</option>
+      {% for tm in teams %}<option value="{{ tm }}">{{ tm }}</option>{% endfor %}
     </select>
   </fieldset>
 
   <fieldset>
-    <legend>Role (optional)</legend>
+    <legend>{{ t('role') }}</legend>
     <select name="role">
-      <option value="">prefer not to say</option>
+      <option value="">{{ t('prefer_not') }}</option>
       <option>engineer</option>
       <option>coordinator</option>
       <option>cra</option>
@@ -40,6 +34,6 @@
     </select>
   </fieldset>
 
-  <button type="submit">Continue</button>
+  <button type="submit">{{ t('continue') }}</button>
 </form>
 {% endblock %}
